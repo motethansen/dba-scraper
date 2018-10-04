@@ -8,7 +8,16 @@ To start with, setup the python3 environment:
 
 ```bash
 $ python3 -m venv env
+
+$ source env/bin/activate
 ```
+
+We will be using urllib3 to handle the page request. so we have to install the urllib3:
+
+```bash
+(env)$ pip install urllib3
+```
+
 
 install the Beautifulsoup package:
 
@@ -16,7 +25,7 @@ install the Beautifulsoup package:
 $ pip install beautifulsoup4
 ```
 
----
+The URL we are looking at is from a danish website DBA:
 
-In this project, we will be scraping products from this given URL:
 https://www.dba.dk/brugerens-annoncer/brugerid-5683282/
+---
