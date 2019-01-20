@@ -103,5 +103,7 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-#Visual Studio code
+#Visual Studio code and editors
 .vscode
+.idea
+
