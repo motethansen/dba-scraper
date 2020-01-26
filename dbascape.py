@@ -1,11 +1,36 @@
 import certifi
-import urllib3
+import requests
 from bs4 import BeautifulSoup as soup
 import csv
 # import for write image to file
 import os
 import io
 import pymongo
+from selenium import webdriver
+from selenium.webdriver.chrome.options import Options
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+import time
+
+#options = webdriver.ChromeOptions()
+#options.add_argument('--ignore-certificate-errors')
+#options.add_argument('--incognito')
+#options.add_argument('--headless')
+chrome_options = Options()
+chrome_options.add_argument("--headless")
+chrome_options.add_argument("--window-size=1024x1400")
+
+# download Chrome Webdriver  
+# https://sites.google.com/a/chromium.org/chromedriver/download
+# put driver executable file in the script directory
+#chrome_driver = os.path.join(os.getcwd(), "chromedriver")
+
+#driver = webdriver.Chrome(chrome_options=chrome_options, executable_path=chrome_driver)
+#driver = webdriver.Chrome("/usr/local/bin/chromedriver", options=options)
+driver = webdriver.Chrome("/usr/local/bin/chromedriver", chrome_options=chrome_options)
+wait = WebDriverWait(driver, 100)
 
 encoding = 'utf8'
 
@@ -29,23 +54,56 @@ class Product:
         print("Ad URL : ", str(self.adURL))
 
 
-class dba_scraper:
-    def __init__(self, output_csvfilename="product_file.csv"):
+class DBA_scraper:
+    def __init__(self, output_csvfilename="product_file.csv", productObj=0):
         self.product_entries = []  # appended list of products
-        self.response = ""
         self.csvfilename = output_csvfilename
-        self.entries = []  # list of entries per row
+        self.dbs_addurls = []  # list of urls from pages
+        #link to the product instance
+        self.product = productObj
         # Connect to server
         self.mongoclient = pymongo.MongoClient('localhost', 27017)
         # Select the database
         self.importdb = self.mongoclient.dbabase
 
     def page_url(self, url_link):
-        self.my_url = url_link
-        # opening the connection to read the page
-        #self.http = urllib3.PoolManager(cert_reqs='CERT_REQUIRED', ca_certs=certifi.where())
-        self.http = urllib3.PoolManager()
-        self.response = self.http.request('GET', self.my_url)
+        driver.get(url_link)
+
+    def scrape_product(self):
+        # get the imageURL
+        # imagedata = container.findAll("td", {"class": "thumbnailContainer"})
+        product.imageURL = container.find(
+            'div', {"class": "thumbnail"}).attrs['data-original']
+        # get the title text
+        details = container.find("td", {"class": "mainContent"})
+        title = details.find("div", {"class": "expandable-box"})
+        titledata = title.find('a')
+        product.title = titledata.text
+
+        # get the price tag
+        tds = container.findAll("td")
+        product.price = tds[len(tds) - 1].text
+
+    def scrape_page (self):
+        # html parsing
+        #productlist = driver.find_elements_by_class_name("listings__gallery__item")
+        # grab each product entry
+        wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'listings__gallery__item')))
+        a_list = driver.find_elements_by_class_name("listings__gallery__item")
+        print("Count#: ",len(a_list))
+        for elm in a_list:
+            url_string = elm.get_attribute('href')
+            self.dbs_addurls.append(url_string)
+            print(url_string)
+        #page_source = driver.page_source
+        #sp = soup(page_source, 'html.parser')
+        #print(sp.prettify())
+        #for item in productlist:
+            # get the ad URL
+            #self.product.adURL = container.a.get('href')
+        #    print("url: %s", item)
+            #self.product_entries.append(product)
+            #product.print_product()
 
     def set_numof_pages(self, pagestoScrape):
         self.numofpages = int(pagestoScrape)
@@ -80,48 +138,15 @@ class dba_scraper:
                     adURL=data[5])
                 self.importdb.productimports.insert(self.productdata)
 
-    def scrape_page (self):
-        product = Product()
-        # html parsing
-        page_soup = soup(self.response.data, "html.parser")
-        # grab each book entry
-        containers = page_soup.findAll("tr", {"class": "dbaListing"})
-        for container in containers:
-            # get the ad URL
-            product.adURL = container.a.get('href')
 
-            # get the imageURL
-            # imagedata = container.findAll("td", {"class": "thumbnailContainer"})
-            product.imageURL = container.find(
-                'div', {"class": "thumbnail"}).attrs['data-original']
-            # get the title text
-            details = container.find("td", {"class": "mainContent"})
-            title = details.find("div", {"class": "expandable-box"})
-            titledata = title.find('a')
-            product.title = titledata.text
-
-            # get the price tag
-            tds = container.findAll("td")
-            product.price = tds[len(tds) - 1].text
-
-            product.print_product()
-            self.entries.append(product.imageURL)
-            self.entries.append(product.title)
-            self.entries.append(product.description)
-            self.entries.append(product.category)
-            self.entries.append(product.price)
-            self.entries.append(product.adURL)
-            self.product_entries.append(self.entries)
-            self.entries = []
-
-
-dbascrape = dba_scraper("productlist.csv")
-dbascrape.set_numof_pages(41)  # 31
+product = Product()
+dbascrape = DBA_scraper("productlist.csv", product)
+dbascrape.set_numof_pages(3)  # 70
 for page_count in range(1, dbascrape.numofpages):
-    url_sting = "https://www.dba.dk/brugerens-annoncer/brugerid-5683282/side-" + \
+    url_sting = "https://www.dba.dk/saelger/privat/dba/5683282/?page=" + \
                 str(page_count)
     print(url_sting)
     dbascrape.page_url(url_sting)
     dbascrape.scrape_page()
-dbascrape.push_to_db()
-# dbascrape.write_cvs()
+#dbascrape.push_to_db()
+#dbascrape.write_cvs()

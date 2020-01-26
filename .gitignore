@@ -3,6 +3,8 @@ __pycache__/
 *.py[cod]
 *$py.class
 
+.local-chromium
+
 # C extensions
 *.so
 
@@ -106,4 +108,6 @@ venv.bak/
 #Visual Studio code and editors
 .vscode
 .idea
-
+#mac OS
+.DS_Store
+nodescrape/
