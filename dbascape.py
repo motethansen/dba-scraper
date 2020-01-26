@@ -58,7 +58,7 @@ class DBA_scraper:
     def __init__(self, output_csvfilename="product_file.csv", productObj=0):
         self.product_entries = []  # appended list of products
         self.csvfilename = output_csvfilename
-        self.dbs_addurls = []  # list of urls from pages
+        self.dba_addurls = []  # list of urls from pages
         #link to the product instance
         self.product = productObj
         # Connect to server
@@ -93,8 +93,7 @@ class DBA_scraper:
         print("Count#: ",len(a_list))
         for elm in a_list:
             url_string = elm.get_attribute('href')
-            self.dbs_addurls.append(url_string)
-            print(url_string)
+            self.dba_addurls.append(url_string)
         #page_source = driver.page_source
         #sp = soup(page_source, 'html.parser')
         #print(sp.prettify())
@@ -148,5 +147,14 @@ for page_count in range(1, dbascrape.numofpages):
     print(url_sting)
     dbascrape.page_url(url_sting)
     dbascrape.scrape_page()
+
+
+print("total urls collected :", len(dbascrape.dba_addurls))
+url_cnt = 0
+for entry_item in dbascrape.dba_addurls:
+    url_cnt=url_cnt+1
+    print(url_cnt, ") URL: ", entry_item)
+    
+
 #dbascrape.push_to_db()
 #dbascrape.write_cvs()
