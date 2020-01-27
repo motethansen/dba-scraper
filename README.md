@@ -27,5 +27,14 @@ $ pip install beautifulsoup4
 
 The URL we are looking at is from a danish website DBA:
 
-https://www.dba.dk/brugerens-annoncer/brugerid-5683282/
+https://www.dba.dk/saelger/privat/dba/5683282/?page=1
+
+Which is the first page for this advertiser
+
 ---
+### Selenium
+I have added selenium to this project in order to be able to scrape from web pages with javascript.
+WHat happens here is that, the webpage will load, and the next event happening is that the javascript requests the ad content to load.
+
+Therfor, we need to make use of a slightly different method than only beautifulsoup.
+
