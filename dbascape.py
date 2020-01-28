@@ -91,35 +91,31 @@ class DBA_scraper:
         
         # Wait for page to load
         wait.until(EC.presence_of_element_located((By.CLASS_NAME, 'sidebar-layout')))
-        title=""
-        price=""
-        imgURL=""
-        descr = ""
-        status=""
-        kategori=""
-        author=""
-
+        
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[1]/td[2]"):
             title = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[1]/td[2]")
+            prod.title = title.text
         if self.check_exists_by_xpath("//*[@id='content']/div[1]/div[1]/div/div[2]/span[1]"):
             price = driver.find_element_by_xpath("//*[@id='content']/div[1]/div[1]/div/div[2]/span[1]")
+            prod.price = price.text
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[1]/a[1]"):
             imgURL = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[1]/a[1]")
+            prod.imageURL = imgURL.get_attribute('href')
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[1]"):
             descr = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[1]")
+            prod.description = descr.text
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[2]"):
             status = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[2]")
+            prod.description = prod.description + " " + status.text 
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[1]/td[5]"):
             kategori = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[1]/td[5]")
+            prod.category = kategori.text
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[2]/td[2]"):
             author = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[4]/table/tbody/tr[2]/td[2]")
+            prod.author = author.text
+        else:
+            prod.author = ""
 
-        prod.title = title.text
-        prod.price = price.text
-        prod.imageURL = imgURL.get_attribute('href')
-        prod.description = descr.text + " " + status.text 
-        prod.category = kategori.text
-        prod.author = author.text
         prod.adURL = driver.current_url
 
         self.product_entries.append(prod)
@@ -143,16 +139,24 @@ class DBA_scraper:
     def set_numof_pages(self, pagestoScrape):
         self.numofpages = int(pagestoScrape)
 
-    csv_columns = ['imageurl', 'title',
-                   'description', 'category', 'price', 'adurl']
-
     def write_cvs(self):
         try:
-            with io.open(self.csvfilename, mode='w', encoding='UTF-8') as csvfile:
-                writer = csv.writer(csvfile, dialect='excel',
-                                    quoting=csv.QUOTE_NONNUMERIC)
-                writer.writerow(self.csv_columns)
-                writer.writerows(self.product_entries)
+            with open(self.csvfilename, 'w', newline='') as csvfile:
+                fields = ['imageurl', 'title', 'author', 'description', 'category', 'price', 'adurl']
+                # creating a csv dict writer object 
+                writer = csv.writer(csvfile) 
+                writer.writerow(fields)
+                # writing data rows 
+                for plist in productList:
+                    writelist = [ plist.imageURL ,
+                        plist.title ,
+                        plist.author,
+                        plist.description ,
+                        plist.category ,
+                        plist.price ,
+                        plist.adURL ]
+
+                    writer.writerow(writelist)
             csvfile.close()
         except IOError as e:
             strerror = e.args
@@ -194,5 +198,6 @@ for entry_item in dbascrape.dba_addurls:
     dbascrape.scrape_product(prod)
     print("Products: ", len(productList))
 
+driver.quit()
 #dbascrape.push_to_db()
 dbascrape.write_cvs()
