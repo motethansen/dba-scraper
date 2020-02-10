@@ -31,6 +31,8 @@ chrome_options.add_argument("--window-size=1024x1400")
 #driver = webdriver.Chrome("/usr/local/bin/chromedriver", options=options)
 driver = webdriver.Chrome("/usr/local/bin/chromedriver", chrome_options=chrome_options)
 wait = WebDriverWait(driver, 100)
+imgdriver = webdriver.Chrome("/usr/local/bin/chromedriver", chrome_options=chrome_options)
+waitimg = WebDriverWait(imgdriver, 100)
 
 encoding = 'utf8'
 productList=[]
@@ -86,7 +88,31 @@ class DBA_scraper:
             # Element is not present
             returnValue = False
         return returnValue
+    
+    def check_exists_imgurl_by_xpath(self, xpathstring):
+        returnValue= False
+        if len(imgdriver.find_elements_by_xpath(xpathstring))>0:
+            # Element is present
+            returnValue = True
+        else:
+            # Element is not present
+            returnValue = False
+        return returnValue
 
+    def getImgUrl(self, urlString):
+        imgdriver.get(urlString)
+        imgUrl= None
+        waitimg.until(EC.presence_of_element_located((By.ID, 'pictureBrowser')))
+        if self.check_exists_imgurl_by_xpath('//*[@id="pictureBrowser"]/div/div'):
+            element = imgdriver.find_element_by_class_name('mainImage')
+            attributeString = element.find_element_by_tag_name('div').value_of_css_property('background-image')
+            imgUrl = self.parse_style_attribute(attributeString)
+        return imgUrl
+
+    def parse_style_attribute(self, style_string):
+        s_string = (style_string.split('url("')[1]).split('")')[0]
+        return s_string
+    
     def scrape_product(self, prod):
         
         # Wait for page to load
@@ -100,7 +126,8 @@ class DBA_scraper:
             prod.price = price.text
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[1]/a[1]"):
             imgURL = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[1]/a[1]")
-            prod.imageURL = imgURL.get_attribute('href')
+            imgUrlString = imgURL.get_attribute('href')
+            prod.imageURL = self.getImgUrl(imgUrlString)
         if self.check_exists_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[1]"):
             descr = driver.find_element_by_xpath("//*[@id='content']/div[2]/article/div[2]/p[1]")
             prod.description = descr.text
@@ -179,7 +206,7 @@ class DBA_scraper:
 
 product = Product()
 dbascrape = DBA_scraper("productlist.csv", product)
-dbascrape.set_numof_pages(2)  # 70
+dbascrape.set_numof_pages(73)  # 70
 for page_count in range(1, dbascrape.numofpages):
     url_sting = "https://www.dba.dk/saelger/privat/dba/5683282/?page=" + \
                 str(page_count)
@@ -199,5 +226,6 @@ for entry_item in dbascrape.dba_addurls:
     print("Products: ", len(productList))
 
 driver.quit()
+imgdriver.quit()
 #dbascrape.push_to_db()
 dbascrape.write_cvs()
